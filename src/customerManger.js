@@ -70,5 +70,27 @@ async function addCustomer(name, email, phone, address) {
       connection.release();
     }
   }
+  async function destroyCustomer(id) {
+    if (!id) {
+      throw new Error("id obligatoire pour pouvoir supprimer un client");
+    }
+    
+    const connection = await pool.getConnection();
+    try {
+      const [result] = await connection.execute("DELETE FROM customers WHERE id = ?", [id]);
+      if (result.affectedRows === 0) {
+        throw new Error(`Erreur : Aucun client trouvé avec l'ID ${id}.`);
+      }
+      return result.affectedRows;
+    } catch (error) {
+      if (error.code === "ER_ROW_IS_REFERENCED_2") {
+        throw new Error(`Erreur de suppression : le client ${id} est référencé dans d'autres enregistrements.`);
+      }
+      console.error("Erreur lors de la suppression du client:", error.message);
+      throw new Error("Erreur lors de la suppression du client.");
+    } finally {
+      connection.release();
+    }
+  }
 
-module.exports = { getCustomers, addCustomer, updateCustomer };
+module.exports = { getCustomers, addCustomer, updateCustomer, destroyCustomer };
