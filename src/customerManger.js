@@ -74,6 +74,10 @@ async function addCustomer(name, email, phone, address) {
     if (!id) {
       throw new Error("id obligatoire pour pouvoir supprimer un client");
     }
+    // Vérifier si l'ID du client existe
+  if (!(await customerExists(id))) {
+    throw new Error(`Erreur : l'ID ${id} que vous tentez de supprimer n'existe pas.`);
+  }
     
     const connection = await pool.getConnection();
     try {
@@ -92,5 +96,16 @@ async function addCustomer(name, email, phone, address) {
       connection.release();
     }
   }
-
-module.exports = { getCustomers, addCustomer, updateCustomer, destroyCustomer };
+  async function customerExists(id) {
+    const connection = await pool.getConnection();
+    try {
+      const [rows] = await connection.execute("SELECT 1 FROM customers WHERE id = ?", [id]);
+      return rows.length > 0;
+    } catch (error) {
+      console.error("Erreur lors de la vérification de l'existence du client:", error.message);
+      throw new Error("Erreur lors de la vérification de l'existence du client.");
+    } finally {
+      connection.release();
+    }
+  }
+module.exports = { getCustomers, addCustomer, updateCustomer, destroyCustomer, customerExists };
